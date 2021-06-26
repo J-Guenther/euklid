@@ -1,0 +1,15 @@
+{
+  "name": "euklid",
+  "version": "1.0.0",
+  "description": "Typescript library for vector math in 2D",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "/dist"
+  ],
+  "scripts": {
+    "prepublish": "tsc"
+  },
+  "author": "Jannik Günther",
+  "license": "MIT"
+}
