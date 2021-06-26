@@ -78,7 +78,7 @@ export class Vector2 {
     }
 
     divide(other: Vector2): Vector2 {
-        return new Vector2(this.x / other.x, this.y * other.y);
+        return new Vector2(this.x / other.x, this.y / other.y);
     }
 
     divideSelf(other: Vector2): void {
