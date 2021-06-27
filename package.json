@@ -15,6 +15,7 @@
   "author": "Jannik Günther",
   "license": "MIT",
   "dependencies": {
+    "@datastructures-js/doubly-linked-list": "^3.0.1",
     "typescript": "^4.3.4"
   },
   "devDependencies": {
