@@ -1,4 +1,4 @@
-import * as mocha from 'mocha';
+// import * as mocha from 'mocha';
 import * as chai from 'chai';
 import {Vector2} from "../../../src";
 
@@ -141,5 +141,46 @@ describe('Vector2D', () => {
         const v = new Vector2(3,4);
         const v1 = v.normalized();
         expect(v).to.eql(v1);
+    });
+
+    it('should rotate vector and return a new vector', function () {
+        // y should be 0 but due to PI rounding error is 1.2246467991473532e-16
+        expect(new Vector2(2,0).rotate(Math.PI / 180 * 90)).to.eql(new Vector2(1.2246467991473532e-16,2));
+    });
+
+    it('should rotate vector', function () {
+        const v = new Vector2(2,0);
+        v.rotateSelf(Math.PI / 180 * 90);
+        // y should be 0 but due to PI rounding error is 1.2246467991473532e-16
+        expect(v.toString()).to.eql('(1.2246467991473532e-16, 2)');
+    });
+
+    it('should project one vector onto another', function () {
+        expect(new Vector2(2,2).project(new Vector2(-3,-2))).to.eql(new Vector2(2.307692307692308,1.5384615384615385));
+    });
+
+    it('should clamp vector by min and max vectors', function () {
+        expect(new Vector2(2,2).clamp(new Vector2(1,1), new Vector2(1.5,1.5))).to.eql(new Vector2(1.5,1.5));
+    });
+
+    it('should limit length of vector', function () {
+        expect(new Vector2(2,2).limitLength(1.5)).to.eql(new Vector2(1.0606601717798212,1.0606601717798212));
+    });
+
+    it('should move vector toward another vector', function () {
+        expect(new Vector2(2,2).moveToward(new Vector2(0, 2), 2)).to.eql(new Vector2(0,2));
+    });
+
+    it('should slide vector toward another normalized vector', function () {
+        const vNormalized = new Vector2(-2, 2).normalized();
+        expect(new Vector2(2,4).slide(vNormalized)).to.eql(new Vector2(3,3));
+    });
+
+    it('should return vector as array', function () {
+        expect(new Vector2(2,3).toArray()).to.eql([2,3]);
+    });
+
+    it('should copy vector', function () {
+        expect(new Vector2(2,3).copy()).to.eql(new Vector2(2,3));
     });
 })

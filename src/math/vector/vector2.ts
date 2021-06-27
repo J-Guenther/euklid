@@ -9,7 +9,7 @@ export class Vector2 {
     constructor(arrayXY: []);
     constructor(x: number, y: number);
     constructor(xOrVectorOrArray: any, y?: number) {
-        if (xOrVectorOrArray && typeof xOrVectorOrArray == 'number'){
+        if ((xOrVectorOrArray || xOrVectorOrArray === 0) && typeof xOrVectorOrArray == 'number'){
             this.x = xOrVectorOrArray;
             this.y = y;
         } else if (xOrVectorOrArray && typeof xOrVectorOrArray == 'object') {
@@ -172,8 +172,10 @@ export class Vector2 {
     rotateSelf(by: number): void {
         const sin = Math.sin(by);
         const cos = Math.cos(by);
-        this.x = this.x * cos - this.y * sin;
-        this.y = this.x * sin + this.y * cos;
+        const x = this.x;
+        const y = this.y;
+        this.x = x * cos - y * sin;
+        this.y = x * sin + y * cos;
     }
 
     project(to: Vector2): Vector2 {
@@ -187,9 +189,9 @@ export class Vector2 {
     limitLength(length: number): Vector2 {
         const l = this.length();
         const v = this;
-        if (l > 0 && length < 1) {
+        if (l > 0 && length < l) {
             v.divideScalarSelf(l);
-            v.multiplyScalarSelf( length);
+            v.multiplyScalarSelf(length);
         }
         return v;
     }
@@ -198,11 +200,13 @@ export class Vector2 {
         const v = this;
         const vd = to.subtract(v);
         const len = vd.length();
-        return len <= delta || len < EPSILON ? to : v.add(vd).divideScalar(len).multiplyScalar(delta);
+        return len <= delta || len < EPSILON ? to : vd.divideScalar(len).multiplyScalar(delta).add(v);
+        // return v;
     }
 
     slide(normalized: Vector2): Vector2 {
-        return this.subtract(normalized).multiplyScalar(this.dot(normalized));
+        const v = normalized.multiplyScalar(this.dot(normalized));
+        return this.subtract(v);
     }
 
     toString(): string {
