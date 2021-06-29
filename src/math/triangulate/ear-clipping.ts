@@ -13,15 +13,18 @@ export class EarClipping {
 
         for (let i = 0; i < polygon.length; i++) {
             // Construct Triangle
-            const p0 = polygon[mod(i -1, polygon.length)];
+            const p0 = polygon[mod(i - 1, polygon.length)];
             const p1 = polygon[i % polygon.length];
             const p2 = polygon[(i + 1) % polygon.length];
 
             // Check if angle of p1 edges are reflex (interior angle is larger than 180 deg)
             // or convex (interior angle is smaller than 180 deg)
-            const p1p0 = p1.subtract(p0);
-            const p1p2 = p1.subtract(p2);
-            const angle = p1p0.angleTo(p1p2); // TODO angle passt noch nicht
+            const p1p0 = p0.subtract(p1);
+            const p1p2 = p2.subtract(p1);
+            let angle = p1p2.angleTo(p1p0); // TODO angle passt noch nicht
+            if (angle < 0) {
+                angle += 2 * Math.PI;
+            }
             if (angle < Math.PI) {
                 convex.push(p1);
             } else if (angle > Math.PI) {
@@ -31,16 +34,51 @@ export class EarClipping {
             // Check if p1 is an ear
             let isEar = true;
             for (let j = 0; j < reflex.length; j++) {
-                if (reflex[j].equals(p0) || reflex[j].equals(p2) || reflex[j].equals(p2)) {
+                if (reflex[j].equals(p0) || reflex[j].equals(p1) || reflex[j].equals(p2)) {
                     continue;
                 }
-                if (EarClipping.insideTriangle(reflex[j], p0, p1, p2)) {
+                if (EarClipping.insideTriangle2(p0.x, p0.y, p1.x, p1.y, p2.x, p2.y, reflex[j].x, reflex[j].y, true)) {
                     isEar = false;
                     break;
                 }
             }
+            if (isEar) {
+                ears.insertLast(p1);
+            }
         }
         return null
+    }
+
+    static insideTriangle2(Ax: number, Ay: number,
+                          Bx: number, By: number,
+                          Cx: number, Cy: number,
+                          Px: number, Py: number,
+                          include_edges: boolean): boolean {
+        let ax, ay, bx, by, cx, cy, apx, apy, bpx, bpy, cpx, cpy;
+        let cCROSSap, bCROSScp, aCROSSbp;
+
+        ax = Cx - Bx;
+        ay = Cy - By;
+        bx = Ax - Cx;
+        by = Ay - Cy;
+        cx = Bx - Ax;
+        cy = By - Ay;
+        apx = Px - Ax;
+        apy = Py - Ay;
+        bpx = Px - Bx;
+        bpy = Py - By;
+        cpx = Px - Cx;
+        cpy = Py - Cy;
+
+        aCROSSbp = ax * bpy - ay * bpx;
+        cCROSSap = cx * apy - cy * apx;
+        bCROSScp = bx * cpy - by * cpx;
+
+        if (include_edges) {
+            return ((aCROSSbp > 0.0) && (bCROSScp > 0.0) && (cCROSSap > 0.0));
+        } else {
+            return ((aCROSSbp >= 0.0) && (bCROSScp >= 0.0) && (cCROSSap >= 0.0));
+        }
     }
 
     // https://stackoverflow.com/a/2049593

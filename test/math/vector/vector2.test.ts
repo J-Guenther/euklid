@@ -183,4 +183,17 @@ describe('Vector2D', () => {
     it('should copy vector', function () {
         expect(new Vector2(2,3).copy()).to.eql(new Vector2(2,3));
     });
+
+    it('should create 90 degree vector', function () {
+       const a = new Vector2(3,3);
+       const b = new Vector2(6,5);
+       //  const a = new Vector2(1219166.2075301523, 6828143.722574848);
+       //  const b = new Vector2(1219189.3269723828, 6828155.282295963);
+       const ab = b.subtract(a);
+       const ab90 = ab.rotate(Math.PI / -2);
+       const c = b.slide(ab90.normalized());
+       const bc = c.subtract(b);
+       console.log(c.add(bc.multiplyScalar(2)));
+       console.log(180/Math.PI *  bc.angleTo(ab));
+    });
 })
