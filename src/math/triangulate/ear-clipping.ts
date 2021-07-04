@@ -3,74 +3,108 @@ import {DoublyLinkedList} from '@datastructures-js/doubly-linked-list';
 import {mod} from "../basis/functions";
 
 export class EarClipping {
+    static vertices: DoublyLinkedList;
+    static ears: DoublyLinkedList<Vector2>;
+    static convex: DoublyLinkedList<Vector2>;
+    static reflex: DoublyLinkedList<Vector2>;
+
 
     static triangulate(polygon: Vector2[]): Vector2[] {
-        const vertices = new DoublyLinkedList();
-        polygon.forEach(vertex => vertices.insertLast(vertex));
-        const ears = new DoublyLinkedList();
-        const convex: Vector2[] = [];
-        const reflex: Vector2[] = [];
+        this.vertices = new DoublyLinkedList<Vector2>();
+        this.ears = new DoublyLinkedList<Vector2>();
+        this.convex = new DoublyLinkedList<Vector2>();
+        this.reflex = new DoublyLinkedList<Vector2>();
 
-        // Construct convex and reflex list
-        for (let i = 0; i < polygon.length; i++) {
-            // Construct Triangle
-            const p0 = polygon[mod(i - 1, polygon.length)];
-            const p1 = polygon[i % polygon.length];
-            const p2 = polygon[(i + 1) % polygon.length];
 
-            // Check if angle of p1 edges are reflex (interior angle is larger than 180 deg)
-            // or convex (interior angle is smaller than 180 deg)
-            const edge1 = p0.subtract(p1);
-            const edge2 = p2.subtract(p1);
-            let angle = edge2.angleTo(edge1);
-            if (angle < 0) {
-                angle += 2 * Math.PI;
+        polygon.forEach(vertex => this.vertices.insertLast(vertex));
+        this.vertices.forEach(vertex => {
+            const p1 = vertex.getValue();
+            const p0 = vertex.getPrev() ? vertex.getPrev().getValue() : this.vertices.tail().getValue();
+            const p2 = vertex.getNext() ? vertex.getNext().getValue() : this.vertices.head().getValue();
+            if (this.isP1Convex(p1, p0, p2)) {
+                this.convex.insertLast(p1);
+            } else {
+                this.reflex.insertLast(p1);
             }
-            if (angle < Math.PI) {
-                convex.push(p1);
-            } else if (angle > Math.PI) {
-                reflex.push(p1);
-            }
-        }
+        });
 
-        for (let i = 0; i < polygon.length; i++) {
-            // Construct Triangle
-            const p0 = polygon[mod(i - 1, polygon.length)];
-            const p1 = polygon[i % polygon.length];
-            const p2 = polygon[(i + 1) % polygon.length];
-
-            const p1p0 = p0.subtract(p1);
-            const p1p2 = p2.subtract(p1);
-            let angle = p1p2.angleTo(p1p0);
-            if (angle < 0) {
-                angle += 2 * Math.PI;
+        this.vertices.forEach(vertex => {
+            const p1 = vertex.getValue();
+            const p0 = vertex.getPrev() ? vertex.getPrev().getValue() : this.vertices.tail().getValue();
+            const p2 = vertex.getNext() ? vertex.getNext().getValue() : this.vertices.head().getValue();
+            if (this.isP1Ear(p1, p0, p2)) {
+                this.ears.insertLast(p1);
             }
-            let isConvex = false;
-            if (angle < Math.PI) {
-                isConvex = true;
-            } else if (angle > Math.PI) {
-                continue;
-            }
+        });
 
-
-            // Check if p1 is an ear
-            let isEar = true;
-            for (let j = 0; j < reflex.length; j++) {
-                if (reflex[j].equals(p0) || reflex[j].equals(p1) || reflex[j].equals(p2)) {
-                    continue;
-                }
-                if (EarClipping.insideTriangle(reflex[j], p1, p2, p0)) {
-                    isEar = false;
-                    break;
-                }
-            }
-            if (isEar && isConvex) {
-                ears.insertLast(p1);
-            }
-        }
-
+        const result = [];
+        EarClipping.earClip([]);
 
         return null
+    }
+
+    static earClip(triangles) {
+        if (this.ears.count() > 0) {
+            let vertex1 = this.vertices.find((node, position) => node.getValue() === this.ears.head().getValue());
+            if (vertex1) {
+                let vertex0 = vertex1.getPrev() ? vertex1.getPrev() : this.vertices.tail();
+                let vertex2 = vertex1.getNext() ? vertex1.getNext() : this.vertices.head();
+                let p1 = vertex1.getValue();
+                let p0 = vertex0.getValue();
+                let p2 = vertex2.getValue();
+                triangles.push([p0, p1, p2]);
+
+                this.vertices.remove(vertex1);
+                this.ears.remove(vertex1);
+
+                vertex1 = vertex0;
+                vertex0 = vertex1.getPrev() ? vertex1.getPrev() : this.vertices.tail();
+                vertex2 = vertex1.getNext() ? vertex1.getNext() : this.vertices.head();
+                p1 = vertex1.getValue();
+                p0 = vertex0.getValue();
+                p2 = vertex2.getValue();
+
+                const isConvex = this.convex.find((node, position) => node.getValue() === p1);
+                if (isConvex) {
+                    if (!this.isP1Convex(p1, p0, p2)) {
+                        this.convex.remove(p1);
+
+                    }
+                }
+
+            }
+
+        }
+    }
+
+    static isP1Ear(p1, p0, p2): boolean {
+        let isEar = true;
+        this.reflex.forEach(reflex => {
+            const reflexValue = reflex.getValue();
+            if (reflexValue.equals(p1)) {
+                isEar = false;
+                return;
+            }
+            if (reflexValue.equals(p0) || reflexValue.equals(p2)) {
+                return;
+            }
+            if (EarClipping.insideTriangle(reflexValue, p0, p1, p2)) {
+                isEar = false;
+                return
+            }
+        });
+        return isEar && this.convex;
+    }
+
+    // if false then it is reflex
+    static isP1Convex(p1, p0, p2): boolean {
+        const p1p0 = p0.subtract(p1);
+        const p1p2 = p2.subtract(p1);
+        let angle = p1p2.angleTo(p1p0);
+        if (angle < 0) {
+            angle += 2 * Math.PI;
+        }
+        return angle < Math.PI;
     }
 
     // https://stackoverflow.com/a/9755252
