@@ -11,6 +11,7 @@ export class EarClipping {
         const convex: Vector2[] = [];
         const reflex: Vector2[] = [];
 
+        // Construct convex and reflex list
         for (let i = 0; i < polygon.length; i++) {
             // Construct Triangle
             const p0 = polygon[mod(i - 1, polygon.length)];
@@ -19,9 +20,9 @@ export class EarClipping {
 
             // Check if angle of p1 edges are reflex (interior angle is larger than 180 deg)
             // or convex (interior angle is smaller than 180 deg)
-            const p1p0 = p0.subtract(p1);
-            const p1p2 = p2.subtract(p1);
-            let angle = p1p2.angleTo(p1p0); // TODO angle passt noch nicht
+            const edge1 = p0.subtract(p1);
+            const edge2 = p2.subtract(p1);
+            let angle = edge2.angleTo(edge1);
             if (angle < 0) {
                 angle += 2 * Math.PI;
             }
@@ -30,6 +31,27 @@ export class EarClipping {
             } else if (angle > Math.PI) {
                 reflex.push(p1);
             }
+        }
+
+        for (let i = 0; i < polygon.length; i++) {
+            // Construct Triangle
+            const p0 = polygon[mod(i - 1, polygon.length)];
+            const p1 = polygon[i % polygon.length];
+            const p2 = polygon[(i + 1) % polygon.length];
+
+            const p1p0 = p0.subtract(p1);
+            const p1p2 = p2.subtract(p1);
+            let angle = p1p2.angleTo(p1p0);
+            if (angle < 0) {
+                angle += 2 * Math.PI;
+            }
+            let isConvex = false;
+            if (angle < Math.PI) {
+                isConvex = true;
+            } else if (angle > Math.PI) {
+                continue;
+            }
+
 
             // Check if p1 is an ear
             let isEar = true;
@@ -37,23 +59,39 @@ export class EarClipping {
                 if (reflex[j].equals(p0) || reflex[j].equals(p1) || reflex[j].equals(p2)) {
                     continue;
                 }
-                if (EarClipping.insideTriangle2(p0.x, p0.y, p1.x, p1.y, p2.x, p2.y, reflex[j].x, reflex[j].y, true)) {
+                if (EarClipping.insideTriangle(reflex[j], p1, p2, p0)) {
                     isEar = false;
                     break;
                 }
             }
-            if (isEar) {
+            if (isEar && isConvex) {
                 ears.insertLast(p1);
             }
         }
+
+
         return null
     }
 
+    // https://stackoverflow.com/a/9755252
+    static intpoint_inside_trigon(s, a, b, c): boolean {
+        const as_x = s.x - a.x;
+        const as_y = s.y - a.y;
+
+        const s_ab = (b.x - a.x) * as_y - (b.y - a.y) * as_x > 0;
+
+        if ((c.x - a.x) * as_y - (c.y - a.y) * as_x > 0 == s_ab) return false;
+
+        if ((c.x - b.x) * (s.y - b.y) - (c.y - b.y) * (s.x - b.x) > 0 != s_ab) return false;
+
+        return true;
+    }
+
     static insideTriangle2(Ax: number, Ay: number,
-                          Bx: number, By: number,
-                          Cx: number, Cy: number,
-                          Px: number, Py: number,
-                          include_edges: boolean): boolean {
+                           Bx: number, By: number,
+                           Cx: number, Cy: number,
+                           Px: number, Py: number,
+                           include_edges: boolean): boolean {
         let ax, ay, bx, by, cx, cy, apx, apy, bpx, bpy, cpx, cpy;
         let cCROSSap, bCROSScp, aCROSSbp;
 
